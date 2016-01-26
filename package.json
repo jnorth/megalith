@@ -1,0 +1,10 @@
+{
+  "name": "flax",
+  "version": "0.0.1",
+  "author": "Joseph North <north@sublink.ca>",
+  "description": "A classical flux.",
+  "keywords": "react, flux",
+  "license": "MIT",
+  "repository": "jnorth/flax",
+  "main": "index"
+}
