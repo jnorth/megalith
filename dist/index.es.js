@@ -4,15 +4,15 @@
 function buildActionPath(store) {
   var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
-  path.push(store._pathName);
+  path.push(store._flax.pathName);
 
-  return store._parent ? buildActionPath(store._parent, path) : path.reverse().filter(function (item) {
+  return store._flax.parent ? buildActionPath(store._flax.parent, path) : path.reverse().filter(function (item) {
     return item;
   }).join('.');
 }
 
 var findRoot = function findRoot(store) {
-  return store._parent ? findRoot(store._parent) : store;
+  return store._flax.parent ? findRoot(store._flax.parent) : store;
 };
 
 /**
@@ -23,7 +23,7 @@ function action(target, key, descriptor) {
   var reducerName = reducer.name;
 
   // Save current implementation as the reducer function
-  Object.defineProperty(target, '@reducer_' + reducerName, descriptor);
+  Object.defineProperty(target, '_flax_reducer_' + reducerName, descriptor);
 
   // Write new implementation as the action creator function
   descriptor.value = function () {
@@ -62,8 +62,13 @@ var Store = function () {
   function Store() {
     _classCallCheck(this, Store);
 
-    this._children = [];
-    this._subscribers = [];
+    this._flax = {
+      children: [],
+      parent: undefined,
+      pathName: undefined,
+      state: undefined,
+      subscribers: []
+    };
 
     // Prime the children
     for (var a in this) {
@@ -87,16 +92,16 @@ var Store = function () {
     value: function serialize() {
       var _this = this;
 
-      if (this._state instanceof Array) {
-        return this._state;
+      if (this._flax.state instanceof Array) {
+        return this._flax.state;
       }
 
-      var children = this._children.reduce(function (combined, child) {
+      var children = this._flax.children.reduce(function (combined, child) {
         combined[child] = _this[child].serialize();
         return combined;
       }, {});
 
-      return _extends({}, this._state, children);
+      return _extends({}, this._flax.state, children);
     }
 
     /**
@@ -109,11 +114,11 @@ var Store = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(callback) {
-      this._subscribers.push(callback);
+      this._flax.subscribers.push(callback);
       callback({
         store: this,
-        before: this._state,
-        after: this._state,
+        before: this._flax.state,
+        after: this._flax.state,
         action: {
           path: buildActionPath(this),
           type: '@init',
@@ -133,17 +138,17 @@ var Store = function () {
     key: 'dispatch',
     value: function dispatch(action$$1) {
       var path = buildActionPath(this);
-      var before = this._state;
+      var before = this._flax.state;
 
       if (action$$1.path === '') {
-        var reducerName = '@reducer_' + action$$1.type;
+        var reducerName = '_flax_reducer_' + action$$1.type;
         var reducer = this[reducerName];
 
         if (typeof reducer !== 'function') {
           throw new Error('Action not found \'' + this.constructor.name + ':' + action$$1.type + '\'.');
         }
 
-        this._state = this[reducerName].apply(this, action$$1.payload);
+        this._flax.state = this[reducerName].apply(this, action$$1.payload);
       } else {
         var childPath = action$$1.path.split('.');
         var nextPath = childPath.shift();
@@ -151,7 +156,7 @@ var Store = function () {
         this[nextPath].dispatch(childAction);
       }
 
-      var after = this._state;
+      var after = this._flax.state;
       var event = {
         store: this,
         action: action$$1,
@@ -164,7 +169,7 @@ var Store = function () {
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = this._subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        for (var _iterator = this._flax.subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
           var callback = _step.value;
           callback(event);
         }
@@ -188,7 +193,7 @@ var Store = function () {
   }, {
     key: 'state',
     get: function get() {
-      return this._state;
+      return this._flax.state;
     }
 
     /**
@@ -201,7 +206,7 @@ var Store = function () {
   }, {
     key: 'initialState',
     set: function set(state) {
-      this._state = state;
+      this._flax.state = state;
 
       Object.defineProperty(this, 'initialState', {
         set: function set() {
@@ -221,9 +226,9 @@ function child(child) {
   return function (target, key, descriptor) {
     return {
       get: function get() {
-        this._children.push(key);
-        child._parent = this;
-        child._pathName = key;
+        this._flax.children.push(key);
+        child._flax.parent = this;
+        child._flax.pathName = key;
 
         Object.defineProperty(this, key, {
           configurable: true,
