@@ -111,7 +111,3 @@ actions.
 A decorator to mark methods as action handlers. When calling these methods, an
 action will be created and dispatched, creating a new state tree with the result
 of the method.
-
-### `flax.child`
-
-A decorator to mark properties as child stores.

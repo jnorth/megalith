@@ -10,9 +10,8 @@ class Messages extends Store {
 class App extends Store {
   initialState = {
     version: 1,
+    messages: new Messages(),
   };
-
-  @child(new Messages()) messages;
 }
 
 test('store instance', t => {
@@ -24,17 +23,7 @@ test('store instance', t => {
   t.is(app.messages.state.all[1], 'B');
 });
 
-test('serialize', t => {
-  const app = new App();
-  app.messages;
-  const state = app.serialize();
-
-  t.is(state.version, 1);
-  t.is(state.messages.all.length, 3);
-  t.is(state.messages.all[1], 'B');
-});
-
-test.failing('serialize before accessing child', t => {
+test('serialize before accessing child', t => {
   const app = new App();
   const state = app.serialize();
 

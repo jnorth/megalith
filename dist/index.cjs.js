@@ -67,24 +67,13 @@ var Store = function () {
     _classCallCheck(this, Store);
 
     this._flax = {
-      children: [],
+      children: {},
       parent: undefined,
       pathName: undefined,
-      state: undefined,
+      state: {},
       subscribers: []
     };
-
-    // Prime the children
-    for (var a in this) {
-      if (this[a] instanceof Store) this[a];
-    }
   }
-
-  /**
-   * Get the store's state. Does not include the state of child stores—instead
-   * access the children directly, or use `serialize`.
-   */
-
 
   _createClass(Store, [{
     key: 'serialize',
@@ -100,8 +89,8 @@ var Store = function () {
         return this._flax.state;
       }
 
-      var children = this._flax.children.reduce(function (combined, child) {
-        combined[child] = _this[child].serialize();
+      var children = Object.keys(this._flax.children).reduce(function (combined, child) {
+        combined[child] = _this._flax.children[child].serialize();
         return combined;
       }, {});
 
@@ -196,6 +185,12 @@ var Store = function () {
     }
   }, {
     key: 'state',
+
+
+    /**
+     * Get the store's state. Does not include the state of child stores—instead
+     * access the children directly, or use `serialize`.
+     */
     get: function get() {
       return this._flax.state;
     }
@@ -210,12 +205,36 @@ var Store = function () {
   }, {
     key: 'initialState',
     set: function set(state) {
-      this._flax.state = state;
+      var _this2 = this;
 
+      // Override setter
       Object.defineProperty(this, 'initialState', {
         set: function set() {
           throw new Error('Cannot re-initialize state on store \'' + this.constructor.name + '\'.');
         }
+      });
+
+      // Initialize properties
+      Object.keys(state).forEach(function (property) {
+        var value = state[property];
+
+        // Track child stores
+        if (value instanceof Store) {
+          _this2._flax.children[property] = value;
+          value._flax.parent = _this2;
+          value._flax.pathName = property;
+
+          Object.defineProperty(_this2, property, {
+            get: function get() {
+              return this._flax.children[property];
+            }
+          });
+        }
+
+        // Copy local properties
+        else {
+            _this2._flax.state[property] = state[property];
+          }
       });
     }
   }]);
@@ -223,30 +242,5 @@ var Store = function () {
   return Store;
 }();
 
-/**
- * A decorator to mark child stores.
- */
-function child(child) {
-  return function (target, key, descriptor) {
-    return {
-      get: function get() {
-        this._flax.children.push(key);
-        child._flax.parent = this;
-        child._flax.pathName = key;
-
-        Object.defineProperty(this, key, {
-          configurable: true,
-          writable: true,
-          enumerable: true,
-          value: child
-        });
-
-        return child;
-      }
-    };
-  };
-}
-
 exports.Store = Store;
 exports.action = action;
-exports.child = child;
