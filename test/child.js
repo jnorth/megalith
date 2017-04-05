@@ -38,3 +38,10 @@ test('children getters', t => {
   t.is(app.messages.all.length, 3);
   t.is(app.messages.all[1], 'B');
 });
+
+test('children property keys are enumerable', t => {
+  const app = new App();
+  const keys = Object.keys(app);
+
+  t.not(keys.indexOf('messages'), -1);
+});

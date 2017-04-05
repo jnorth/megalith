@@ -36,3 +36,16 @@ test('disable resetting initial state', t => {
 
   t.true(error instanceof Error);
 });
+
+test('state property keys are enumerable', t => {
+  const keys = Object.keys(app);
+
+  t.is(keys.length, 3);
+  t.not(keys.indexOf('version'), -1);
+  t.not(keys.indexOf('a'), -1);
+  t.not(keys.indexOf('messages'), -1);
+
+  t.is(keys.indexOf('_flax'), -1);
+  t.is(keys.indexOf('state'), -1);
+  t.is(keys.indexOf('initialState'), -1);
+});

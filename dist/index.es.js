@@ -62,14 +62,23 @@ var Store = function () {
   function Store() {
     _classCallCheck(this, Store);
 
-    this._flax = {
-      children: {},
-      parent: undefined,
-      pathName: undefined,
-      state: {},
-      subscribers: []
-    };
+    // Create a non-enumerable property to store internal state and metadata.
+    Object.defineProperty(this, '_flax', {
+      value: {
+        state: {},
+        children: {},
+        parent: undefined,
+        pathName: undefined,
+        subscribers: []
+      }
+    });
   }
+
+  /**
+   * Get the store's state. Does not include the state of child stores—instead
+   * access the children directly, or use `serialize`.
+   */
+
 
   _createClass(Store, [{
     key: 'serialize',
@@ -181,12 +190,6 @@ var Store = function () {
     }
   }, {
     key: 'state',
-
-
-    /**
-     * Get the store's state. Does not include the state of child stores—instead
-     * access the children directly, or use `serialize`.
-     */
     get: function get() {
       return this._flax.state;
     }
@@ -221,6 +224,7 @@ var Store = function () {
           value._flax.pathName = property;
 
           Object.defineProperty(_this2, property, {
+            enumerable: true,
             get: function get() {
               return this._flax.children[property];
             }
@@ -229,9 +233,10 @@ var Store = function () {
 
         // Copy local properties, and create getters
         else {
-            _this2._flax.state[property] = state[property];
+            _this2._flax.state[property] = value;
 
             Object.defineProperty(_this2, property, {
+              enumerable: true,
               get: function get() {
                 return this._flax.state[property];
               }
