@@ -227,9 +227,15 @@ var Store = function () {
           });
         }
 
-        // Copy local properties
+        // Copy local properties, and create getters
         else {
             _this2._flax.state[property] = state[property];
+
+            Object.defineProperty(_this2, property, {
+              get: function get() {
+                return this._flax.state[property];
+              }
+            });
           }
       });
     }

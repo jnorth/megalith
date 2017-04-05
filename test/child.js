@@ -31,3 +31,10 @@ test('serialize before accessing child', t => {
   t.is(state.messages.all.length, 3);
   t.is(state.messages.all[1], 'B');
 });
+
+test('children getters', t => {
+  const app = new App();
+
+  t.is(app.messages.all.length, 3);
+  t.is(app.messages.all[1], 'B');
+});
