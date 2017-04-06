@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Store, action, child } from '..';
+import { Store, child } from '..';
 
 class Messages extends Store {
   initialState = {

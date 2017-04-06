@@ -1,29 +1,38 @@
+function createSymbol(name) {
+  return typeof Symbol === 'function' ? Symbol.for(name) : '_' + name;
+}
+
+var $state = createSymbol('flaxState');
+var $name = createSymbol('flaxName');
+var $parent = createSymbol('flaxParent');
+var $children = createSymbol('flaxChildren');
+var $subscribers = createSymbol('flaxSubscribers');
+var $reducers = createSymbol('flaxReducers');
+
 /**
  * Create an action path.
  */
 function buildActionPath(store) {
   var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
-  path.push(store._flax.pathName);
+  path.push(store[$name]);
 
-  return store._flax.parent ? buildActionPath(store._flax.parent, path) : path.reverse().filter(function (item) {
+  return store[$parent] ? buildActionPath(store[$parent], path) : path.reverse().filter(function (item) {
     return item;
   }).join('.');
 }
 
 var findRoot = function findRoot(store) {
-  return store._flax.parent ? findRoot(store._flax.parent) : store;
+  return store[$parent] ? findRoot(store[$parent]) : store;
 };
 
 /**
  * A decorator to mark store actions.
  */
 function action(target, key, descriptor) {
-  var reducer = descriptor.value;
-  var reducerName = reducer.name;
-
   // Save current implementation as the reducer function
-  Object.defineProperty(target, '_flax_reducer_' + reducerName, descriptor);
+  target[$reducers] = target[$reducers] || {};
+  Object.defineProperty(target[$reducers], key, descriptor);
 
   // Write new implementation as the action creator function
   descriptor.value = function () {
@@ -33,7 +42,7 @@ function action(target, key, descriptor) {
 
     findRoot(this).dispatch({
       path: buildActionPath(this),
-      type: reducerName,
+      type: key,
       payload: args
     });
   };
@@ -62,15 +71,42 @@ var Store = function () {
   function Store() {
     _classCallCheck(this, Store);
 
-    // Create a non-enumerable property to store internal state and metadata.
-    Object.defineProperty(this, '_flax', {
-      value: {
-        state: {},
-        children: {},
-        parent: undefined,
-        pathName: undefined,
-        subscribers: []
-      }
+    // Create instance metadata. These are used internally to keep track of
+    // store state for quick access, and other metadata. These are considered
+    // to be a part of the library's private API, and shouldn't need to be
+    // accessed/modified. They are created to be non-enumerable.
+
+    // Instance state. Holds all properties that should be tracked by the Store
+    // object. This allows other properties to be added to a Store object
+    // without affecting serialization.
+    Object.defineProperty(this, $state, {
+      value: {},
+      writable: true
+    });
+
+    // Instance action path name. For child stores, this is set to the name it
+    // is referenced as in the parent. Used to create action names.
+    Object.defineProperty(this, $name, {
+      value: undefined,
+      writable: true
+    });
+
+    // Parent store. For child stores, this is set to the parent store. Used to
+    // find the root store object, which is where we want to dispatch actions.
+    Object.defineProperty(this, $parent, {
+      value: undefined,
+      writable: true
+    });
+
+    // Children stores. Holds all children stores, allowing easy serialization.
+    Object.defineProperty(this, $children, {
+      value: {}
+    });
+
+    // Instance subscribers. Each store object holds its own list of action
+    // event callbacks.
+    Object.defineProperty(this, $subscribers, {
+      value: []
     });
   }
 
@@ -90,16 +126,16 @@ var Store = function () {
     value: function serialize() {
       var _this = this;
 
-      if (this._flax.state instanceof Array) {
-        return this._flax.state;
+      if (this[$state] instanceof Array) {
+        return this[$state];
       }
 
-      var children = Object.keys(this._flax.children).reduce(function (combined, child) {
-        combined[child] = _this._flax.children[child].serialize();
+      var children = Object.keys(this[$children]).reduce(function (combined, child) {
+        combined[child] = _this[$children][child].serialize();
         return combined;
       }, {});
 
-      return _extends({}, this._flax.state, children);
+      return _extends({}, this[$state], children);
     }
 
     /**
@@ -112,11 +148,12 @@ var Store = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(callback) {
-      this._flax.subscribers.push(callback);
+      this[$subscribers].push(callback);
+
       callback({
         store: this,
-        before: this._flax.state,
-        after: this._flax.state,
+        before: this[$state],
+        after: this[$state],
         action: {
           path: buildActionPath(this),
           type: '@init',
@@ -136,17 +173,16 @@ var Store = function () {
     key: 'dispatch',
     value: function dispatch(action$$1) {
       var path = buildActionPath(this);
-      var before = this._flax.state;
+      var before = this[$state];
 
       if (action$$1.path === '') {
-        var reducerName = '_flax_reducer_' + action$$1.type;
-        var reducer = this[reducerName];
+        var reducer = this[$reducers][action$$1.type];
 
         if (typeof reducer !== 'function') {
           throw new Error('Action not found \'' + this.constructor.name + ':' + action$$1.type + '\'.');
         }
 
-        this._flax.state = this[reducerName].apply(this, action$$1.payload);
+        this[$state] = reducer.apply(this, action$$1.payload);
       } else {
         var childPath = action$$1.path.split('.');
         var nextPath = childPath.shift();
@@ -154,7 +190,7 @@ var Store = function () {
         this[nextPath].dispatch(childAction);
       }
 
-      var after = this._flax.state;
+      var after = this[$state];
       var event = {
         store: this,
         action: action$$1,
@@ -167,7 +203,7 @@ var Store = function () {
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = this._flax.subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        for (var _iterator = this[$subscribers][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
           var callback = _step.value;
           callback(event);
         }
@@ -191,7 +227,7 @@ var Store = function () {
   }, {
     key: 'state',
     get: function get() {
-      return this._flax.state;
+      return this[$state];
     }
 
     /**
@@ -219,26 +255,26 @@ var Store = function () {
 
         // Track child stores
         if (value instanceof Store) {
-          _this2._flax.children[property] = value;
-          value._flax.parent = _this2;
-          value._flax.pathName = property;
+          _this2[$children][property] = value;
+          value[$parent] = _this2;
+          value[$name] = property;
 
           Object.defineProperty(_this2, property, {
             enumerable: true,
             get: function get() {
-              return this._flax.children[property];
+              return this[$children][property];
             }
           });
         }
 
         // Copy local properties, and create getters
         else {
-            _this2._flax.state[property] = value;
+            _this2[$state][property] = value;
 
             Object.defineProperty(_this2, property, {
               enumerable: true,
               get: function get() {
-                return this._flax.state[property];
+                return this[$state][property];
               }
             });
           }
