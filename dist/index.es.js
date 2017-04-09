@@ -36,15 +36,13 @@ function action(target, key, descriptor) {
 
   // Write new implementation as the action creator function
   descriptor.value = function () {
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
+    for (var _len = arguments.length, payload = Array(_len), _key = 0; _key < _len; _key++) {
+      payload[_key] = arguments[_key];
     }
 
-    findRoot(this).dispatch({
-      path: buildActionPath(this),
-      type: key,
-      payload: args
-    });
+    var path = buildActionPath(this);
+    var type = path.length ? path + '.' + key : key;
+    findRoot(this).dispatch({ type: type, payload: payload });
   };
 
   return descriptor;
@@ -155,7 +153,6 @@ var Store = function () {
         before: this[$state],
         after: this[$state],
         action: {
-          path: buildActionPath(this),
           type: '@init',
           payload: []
         }
@@ -166,38 +163,36 @@ var Store = function () {
      * Dispatch an event.
      *
      * This is handled automatically when calling action methods, but you can use
-     * this to re-play actions.
+     * this to replay saved actions or trigger synthetic actions.
      */
 
   }, {
     key: 'dispatch',
     value: function dispatch(action$$1) {
-      var path = buildActionPath(this);
       var before = this[$state];
+      var dotIndex = action$$1.type.indexOf('.');
 
-      if (action$$1.path === '') {
-        var reducer = this[$reducers][action$$1.type];
-
-        if (typeof reducer !== 'function') {
-          throw new Error('Action not found \'' + this.constructor.name + ':' + action$$1.type + '\'.');
-        }
-
-        this[$state] = reducer.apply(this, action$$1.payload);
-      } else {
-        var childPath = action$$1.path.split('.');
-        var nextPath = childPath.shift();
-        var childAction = _extends({}, action$$1, { path: childPath.join('.') });
-        this[nextPath].dispatch(childAction);
+      // Forward actions to child stores
+      if (dotIndex !== -1) {
+        var child = action$$1.type.substring(0, dotIndex);
+        var type = action$$1.type.substring(dotIndex + 1);
+        this[child].dispatch(_extends({}, action$$1, { type: type }));
       }
 
-      var after = this[$state];
-      var event = {
-        store: this,
-        action: action$$1,
-        before: before,
-        after: after
-      };
+      // Handle actions meant for the current store
+      else {
+          var reducer = this[$reducers][action$$1.type];
 
+          if (typeof reducer !== 'function') {
+            throw new Error('Action not found \'' + this.constructor.name + ':' + action$$1.type + '\'.');
+          }
+
+          this[$state] = reducer.apply(this, action$$1.payload);
+        }
+
+      // Create event and notify subscribers
+      var after = this[$state];
+      var event = { store: this, action: action$$1, before: before, after: after };
       this[$subscribers].forEach(function (subscriber) {
         return subscriber(event);
       });
