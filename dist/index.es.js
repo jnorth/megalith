@@ -9,45 +9,6 @@ var $children = createSymbol('flaxChildren');
 var $subscribers = createSymbol('flaxSubscribers');
 var $reducers = createSymbol('flaxReducers');
 
-/**
- * Create an action path.
- */
-function buildActionPath(store) {
-  var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-  path.push(store[$name]);
-
-  return store[$parent] ? buildActionPath(store[$parent], path) : path.reverse().filter(function (item) {
-    return item;
-  }).join('.');
-}
-
-var findRoot = function findRoot(store) {
-  return store[$parent] ? findRoot(store[$parent]) : store;
-};
-
-/**
- * A decorator to mark store actions.
- */
-function action(target, key, descriptor) {
-  // Save current implementation as the reducer function
-  target[$reducers] = target[$reducers] || {};
-  Object.defineProperty(target[$reducers], key, descriptor);
-
-  // Write new implementation as the action creator function
-  descriptor.value = function () {
-    for (var _len = arguments.length, payload = Array(_len), _key = 0; _key < _len; _key++) {
-      payload[_key] = arguments[_key];
-    }
-
-    var path = buildActionPath(this);
-    var type = path.length ? path + '.' + key : key;
-    findRoot(this).dispatch({ type: type, payload: payload });
-  };
-
-  return descriptor;
-}
-
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -168,31 +129,31 @@ var Store = function () {
 
   }, {
     key: 'dispatch',
-    value: function dispatch(action$$1) {
+    value: function dispatch(action) {
       var before = this[$state];
-      var dotIndex = action$$1.type.indexOf('.');
+      var dotIndex = action.type.indexOf('.');
 
       // Forward actions to child stores
       if (dotIndex !== -1) {
-        var child = action$$1.type.substring(0, dotIndex);
-        var type = action$$1.type.substring(dotIndex + 1);
-        this[child].dispatch(_extends({}, action$$1, { type: type }));
+        var child = action.type.substring(0, dotIndex);
+        var type = action.type.substring(dotIndex + 1);
+        this[child].dispatch(_extends({}, action, { type: type }));
       }
 
       // Handle actions meant for the current store
       else {
-          var reducer = this[$reducers][action$$1.type];
+          var reducer = this[$reducers][action.type];
 
           if (typeof reducer !== 'function') {
-            throw new Error('Action not found \'' + this.constructor.name + ':' + action$$1.type + '\'.');
+            throw new Error('Action not found \'' + this.constructor.name + ':' + action.type + '\'.');
           }
 
-          this[$state] = reducer.apply(this, action$$1.payload);
+          this[$state] = reducer.apply(this, action.payload);
         }
 
       // Create event and notify subscribers
       var after = this[$state];
-      var event = { store: this, action: action$$1, before: before, after: after };
+      var event = { store: this, action: action, before: before, after: after };
       this[$subscribers].forEach(function (subscriber) {
         return subscriber(event);
       });
@@ -259,5 +220,53 @@ var Store = function () {
 
   return Store;
 }();
+
+/**
+ * Find the root object of a Store tree.
+ * @param {Store} store
+ *
+ * @return {Object}
+ *         An object containing the root `store` item, and the `path` it took
+ *         to get there.
+ */
+function findRoot(store) {
+  var path = '';
+
+  while (true) {
+    // Stop if this store is not mounted as a child
+    if (!store[$name]) break;
+
+    // Add child store to path
+    path = path.length ? store[$name] + '.' + path : store[$name];
+
+    // Traverse to parent store
+    if (!store[$parent]) break;
+    store = store[$parent];
+  }
+
+  return { store: store, path: path };
+}
+
+/**
+ * A decorator to mark store actions.
+ */
+function action(target, key, descriptor) {
+  // Save current implementation as the reducer function
+  target[$reducers] = target[$reducers] || {};
+  Object.defineProperty(target[$reducers], key, descriptor);
+
+  // Write new implementation as the action creator function
+  descriptor.value = function () {
+    for (var _len = arguments.length, payload = Array(_len), _key = 0; _key < _len; _key++) {
+      payload[_key] = arguments[_key];
+    }
+
+    var root = findRoot(this);
+    var type = root.path.length ? root.path + '.' + key : key;
+    root.store.dispatch({ type: type, payload: payload });
+  };
+
+  return descriptor;
+}
 
 export { Store, action };
