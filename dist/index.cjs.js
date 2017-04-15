@@ -13,6 +13,111 @@ var $children = createSymbol('flaxChildren');
 var $subscribers = createSymbol('flaxSubscribers');
 var $reducers = createSymbol('flaxReducers');
 
+var defaultSubscriber = {
+  tag: undefined,
+  type: undefined,
+  init: false,
+  before: false,
+  after: true,
+  bubble: true,
+  context: undefined
+};
+
+function addSubscriber(store, subscriber) {
+  // Convert bare functions into subscriber objects
+  if (typeof subscriber === 'function') {
+    subscriber = { handler: subscriber };
+  }
+
+  // Assign default properties
+  subscriber = Object.assign({}, defaultSubscriber, subscriber);
+
+  // Register subscriber
+  store[$subscribers].push(subscriber);
+
+  // Trigger init event
+  if (subscriber.init) {
+    subscriber.handler({
+      store: store,
+      action: {
+        type: '@init',
+        payload: []
+      }
+    });
+  }
+
+  return subscriber;
+}
+
+function removeSubscriber(store, blueprint) {
+  var isFunction = typeof blueprint === 'function';
+  var properties = isFunction ? [] : Object.keys(blueprint);
+
+  store[$subscribers] = store[$subscribers].filter(function (subscriber) {
+    // Fast path -- equality test
+    if (subscriber === blueprint) return false;
+
+    // Fast path -- blueprint is a handler function
+    if (isFunction && blueprint === subscriber.handler) return false;
+
+    // Regular path -- all blueprint properties need to match the subscriber
+    return properties.reduce(function (keep, property) {
+      if (keep === false) return false;
+      return blueprint[property] !== subscriber[property];
+    }, true);
+  });
+}
+
+function triggerSubscriberEvent(store, action) {
+  var meta = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+  store[$subscribers].forEach(function (subscriber) {
+    var event = { store: store, action: action, context: subscriber.context };
+
+    // Skip non-matching types
+    if (subscriber.type && subscriber.type !== action.type) return;
+
+    // Skip events not targeted to our specific store
+    if (!subscriber.bubble && meta.isChild) return;
+
+    // Fire events
+    if (subscriber.before && meta.before) subscriber.handler(event);
+    if (subscriber.after && meta.after) subscriber.handler(event);
+  });
+}
+
+function createSubscriptionService(target) {
+  var service = function service(handler) {
+    return addSubscriber(target, { init: true, handler: handler });
+  };
+  service.on = function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return addSubscriber.apply(undefined, [target].concat(args));
+  };
+  service.off = function () {
+    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    return removeSubscriber.apply(undefined, [target].concat(args));
+  };
+  service.trigger = function () {
+    for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+      args[_key3] = arguments[_key3];
+    }
+
+    return triggerSubscriberEvent.apply(undefined, [target].concat(args));
+  };
+  return service;
+}
+
+var subscription = {
+  createService: createSubscriptionService
+};
+
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -69,6 +174,7 @@ var Store = function () {
     // Instance subscribers. Each store object holds its own list of action
     // event callbacks.
     Object.defineProperty(this, $subscribers, {
+      writable: true,
       value: []
     });
   }
@@ -106,23 +212,13 @@ var Store = function () {
      *
      * @param {subscriptionCallback} callback
      *        The callback that will be called when the state changes.
+     *
+     * @return {subscriptionService}
      */
 
   }, {
-    key: 'subscribe',
-    value: function subscribe(callback) {
-      this[$subscribers].push(callback);
+    key: 'dispatch',
 
-      callback({
-        store: this,
-        before: this[$state],
-        after: this[$state],
-        action: {
-          type: '@init',
-          payload: []
-        }
-      });
-    }
 
     /**
      * Dispatch an event.
@@ -130,15 +226,14 @@ var Store = function () {
      * This is handled automatically when calling action methods, but you can use
      * this to replay saved actions or trigger synthetic actions.
      */
-
-  }, {
-    key: 'dispatch',
     value: function dispatch(action) {
-      var before = this[$state];
       var dotIndex = action.type.indexOf('.');
+      var isChild = dotIndex !== -1;
+
+      this.subscribe.trigger(action, { isChild: isChild, before: true });
 
       // Forward actions to child stores
-      if (dotIndex !== -1) {
+      if (isChild) {
         var child = action.type.substring(0, dotIndex);
         var type = action.type.substring(dotIndex + 1);
         this[child].dispatch(_extends({}, action, { type: type }));
@@ -155,14 +250,9 @@ var Store = function () {
           this[$state] = reducer.apply(this, action.payload);
         }
 
-      // Create event and notify subscribers
-      var after = this[$state];
-      var event = { store: this, action: action, before: before, after: after };
-      this[$subscribers].forEach(function (subscriber) {
-        return subscriber(event);
-      });
+      this.subscribe.trigger(action, { isChild: isChild, after: true });
 
-      return after;
+      return this[$state];
     }
   }, {
     key: 'state',
@@ -219,6 +309,19 @@ var Store = function () {
             });
           }
       });
+    }
+  }, {
+    key: 'subscribe',
+    get: function get() {
+      // On first access, create a new subscription service
+      var service = subscription.createService(this);
+
+      // Cache the service for repeat accesses
+      Object.defineProperty(this, 'subscribe', {
+        value: service
+      });
+
+      return service;
     }
   }]);
 
