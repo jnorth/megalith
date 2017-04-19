@@ -9,10 +9,17 @@
   ],
   "license": "MIT",
   "repository": "jnorth/flax",
-  "main": "dist/index.cjs",
-  "module": "dist/index.es",
+  "browser": "dist/flax.js",
+  "main": "dist/flax.common.js",
+  "module": "dist/flax.esm.js",
+  "jsnext:main": "dist/flax.esm.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "rollup -c rollup.config.js",
+    "prebuild": "rimraf dist",
+    "build": "node build/rollup.js",
+    "pretest": "npm run build",
     "test": "ava"
   },
   "devDependencies": {
@@ -20,8 +27,10 @@
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
     "babel-preset-env": "^1.2.1",
     "babel-preset-stage-1": "^6.22.0",
+    "rimraf": "^2.6.1",
     "rollup": "^0.41.5",
-    "rollup-plugin-babel": "^2.7.1"
+    "rollup-plugin-babel": "^2.7.1",
+    "uglify-js": "^2.8.22"
   },
   "babel": {
     "presets": [
