@@ -1,4 +1,5 @@
 import { $state, $name, $parent, $children, $subscribers, $reducers } from './symbols';
+import defineStateProperties from './defineStateProperties';
 import subscription from './subscription';
 
 /**
@@ -22,7 +23,7 @@ export default class Store {
     // object. This allows other properties to be added to a Store object
     // without affecting serialization.
     Object.defineProperty(this, $state, {
-      value: {},
+      value: undefined,
       writable: true,
     });
 
@@ -76,39 +77,18 @@ export default class Store {
     });
 
     // Initialize properties
-    Object.keys(state).forEach(property => {
-      const value = state[property];
-
-      // Track child stores
-      if (value instanceof Store) {
-        this[$children][property] = value;
-        value[$parent] = this;
-        value[$name] = property;
-
-        Object.defineProperty(this, property, {
-          enumerable: true,
-          get() { return this[$children][property]; },
-        });
-      }
-
-      // Copy local properties, and create getters
-      else {
-        this[$state][property] = value;
-
-        Object.defineProperty(this, property, {
-          enumerable: true,
-          get() { return this[$state][property]; },
-        });
-      }
-    });
+    defineStateProperties(this, state);
   }
 
   /**
    * Get the store's complete state tree.
    */
   serialize() {
-    if (this[$state] instanceof Array) {
-      return this[$state];
+    const state = this[$state];
+    const isBasic = (typeof state !== 'object' || Array.isArray(state));
+
+    if (isBasic) {
+      return state;
     }
 
     const children = Object.keys(this[$children]).reduce((combined, child) => {
@@ -117,7 +97,7 @@ export default class Store {
     }, {});
 
     return {
-      ...this[$state],
+      ...state,
       ...children,
     };
   }

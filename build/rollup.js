@@ -12,7 +12,11 @@ var banner =
 
 rollup.rollup({
   entry: 'src/index.js',
-  plugins: [ babel() ]
+  plugins: [
+    babel({
+      plugins: ['external-helpers']
+    })
+  ]
 }).then(function(bundle){
 
   // Write ES module bundle
