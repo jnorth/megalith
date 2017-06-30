@@ -16,14 +16,21 @@ test('es5', t => {
   App.prototype = Object.create(flax.Store.prototype);
   App.prototype.constructor = App;
 
-  // Define action
-  Object.defineProperty(App.prototype, 'bump', flax.action(App.prototype, 'bump', {
-    value: function bump() {
-      return Object.assign({}, this.state, {
-        version: this.version + 1
-      });
-    },
-  }));
+  // Define actions
+
+  flax.action.define(App.prototype, 'bump', function() {
+    return Object.assign({}, this.state, {
+      version: this.version + 1,
+    });
+  });
+
+  App.prototype.addMessage = function addMessage(message) {
+    return Object.assign({}, this.state, {
+      messages: this.messages.concat(message),
+    });
+  };
+
+  flax.action.define(App.prototype, 'addMessage');
 
   var app = new App();
 
@@ -37,4 +44,11 @@ test('es5', t => {
   t.is(app.state.version, 2);
   t.is(app.version, 2);
   t.is(app.serialize().version, 2);
+
+  app.addMessage('c');
+  t.is(app.state.version, 2);
+  t.is(app.version, 2);
+  t.deepEqual(app.state.messages, ['a', 'b', 'c']);
+  t.deepEqual(app.messages, ['a', 'b', 'c']);
+  t.deepEqual(app.serialize().messages, ['a', 'b', 'c']);
 });

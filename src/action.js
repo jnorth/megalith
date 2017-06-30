@@ -29,9 +29,22 @@ function findRoot(store) {
 };
 
 /**
- * A decorator to mark store actions.
+ * A decorator to mark Store methods as "action" methods.
+ *
+ * Any state changes should be wrapped in an action method. Instead of mutating
+ * the state directly however, action methods return a new copy of the entire
+ * state object.
+ *
+ * @param {Store} target
+ *        The target store object to define the action method onto.
+ *
+ * @param {String} key
+ *        The action name.
+ *
+ * @param {Object} descriptor
+ *        The function descriptor.
  */
-export default function action(target, key, descriptor) {
+function action(target, key, descriptor) {
   // Save current implementation as the reducer function
   target[$reducers] = target[$reducers] || {};
   Object.defineProperty(target[$reducers], key, descriptor);
@@ -47,3 +60,29 @@ export default function action(target, key, descriptor) {
 
   return descriptor;
 };
+
+/**
+ * Define an action method for a target Store object.
+ *
+ * This can be used in place of the action decorator.
+ *
+ * @param {Store} target
+ *        The target store object to define the action method onto.
+ *
+ * @param {String} key
+ *        The action name.
+ *
+ * @param {Function} [fn]
+ *        The action function to use. If none given, `target[key]` will be used.
+ */
+action.define = function define(target, key, fn=null) {
+  if (!fn) {
+    fn = target[key];
+  }
+
+  // Save the action method, and re-write it to be an action creator
+  const descriptor = action(target, key, { value: fn });
+  Object.defineProperty(target, key, descriptor);
+};
+
+export default action;
