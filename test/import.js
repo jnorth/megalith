@@ -1,12 +1,12 @@
 import test from 'ava';
-import flax from '..';
+import megalith from '..';
 
-class App extends flax.Store {
+class App extends megalith.Store {
   initialState = {
     version: 1,
   };
 
-  @flax.action bump() {
+  @megalith.action bump() {
     return {
       ...this.state,
       version: this.version + 1,

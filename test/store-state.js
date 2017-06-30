@@ -72,7 +72,6 @@ test('state property keys are enumerable', t => {
   t.not(keys.indexOf('a'), -1);
   t.not(keys.indexOf('messages'), -1);
 
-  t.is(keys.indexOf('_flax'), -1);
   t.is(keys.indexOf('state'), -1);
   t.is(keys.indexOf('initialState'), -1);
 });

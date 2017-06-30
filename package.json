@@ -1,5 +1,5 @@
 {
-  "name": "flax",
+  "name": "megalith",
   "version": "0.0.1",
   "author": "Joseph North <north@sublink.ca>",
   "description": "A classical flux.",
@@ -8,11 +8,11 @@
     "flux"
   ],
   "license": "MIT",
-  "repository": "jnorth/flax",
-  "browser": "dist/flax.js",
-  "main": "dist/flax.common.js",
-  "module": "dist/flax.esm.js",
-  "jsnext:main": "dist/flax.esm.js",
+  "repository": "jnorth/megalith",
+  "browser": "dist/megalith.js",
+  "main": "dist/megalith.common.js",
+  "module": "dist/megalith.esm.js",
+  "jsnext:main": "dist/megalith.esm.js",
   "files": [
     "dist"
   ],

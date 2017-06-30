@@ -1,10 +1,10 @@
-# Flax
+# Megalith
 
 An implementation of ideas from Flux and Redux, with a class-based API.
 
 ## Overview
 
-Flax has the same three core concepts as Redux:
+Megalith has the same three core concepts as Redux:
 
 - State is stored in a single object tree.
 - You mark your intent to change state by dispatching actions. Actions are
@@ -15,10 +15,10 @@ Flax has the same three core concepts as Redux:
 The implementation differs however, with actions being created automatically,
 and state being organized into a tree of `Store` classes.
 
-You start off by extending the Flax Store and setting the inital state:
+You start off by extending the Megalith Store and setting the inital state:
 
 ```js
-import { Store } from 'flax';
+import { Store } from 'megalith';
 
 class Application extends Store {
   initialState = {
@@ -33,7 +33,7 @@ app.state.count; // => 0
 Next you would create action methods that describe how to change the state:
 
 ```js
-import { Store, action } from 'flax';
+import { Store, action } from 'megalith';
 
 class Application extends Store {
   ...
@@ -79,20 +79,20 @@ history; // => [{ count:0 }, { count:1 }]
 
 ## Usage
 
-### `flax.Store`
+### `megalith.Store`
 
 A base class for your store objects.
 
-#### `flax.Store.serialize()`
+#### `megalith.Store.serialize()`
 
 Get the entire state tree, including child stores, as a regular JS object.
 
-#### `flax.Store.subscribe(callback)`
+#### `megalith.Store.subscribe(callback)`
 
 Listen for action events on the store. The callback function is passed an event
 object with the following properties:
 
-`store` — The `flax.Store` object the event was fired from.
+`store` — The `megalith.Store` object the event was fired from.
 
 `action` — The action that was triggered.
 
@@ -100,13 +100,13 @@ object with the following properties:
 
 `after` — The store's state after the action.
 
-#### `flax.Store.dispatch(action)`
+#### `megalith.Store.dispatch(action)`
 
 Manually trigger actions. Although you typically trigger actions by calling
 `@action` methods directly, this is useful for re-playing previously created
 actions.
 
-### `flax.action`
+### `megalith.action`
 
 A decorator to mark methods as action handlers. When calling these methods, an
 action will be created and dispatched, creating a new state tree with the result

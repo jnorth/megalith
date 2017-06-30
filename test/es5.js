@@ -1,10 +1,10 @@
 var test = require('ava');
-var flax = require('..');
+var megalith = require('..');
 
 test('es5', t => {
   // Create constructor
   function App() {
-    flax.Store.call(this);
+    megalith.Store.call(this);
 
     this.initialState = {
       version: 1,
@@ -13,12 +13,12 @@ test('es5', t => {
   }
 
   // Extend Store
-  App.prototype = Object.create(flax.Store.prototype);
+  App.prototype = Object.create(megalith.Store.prototype);
   App.prototype.constructor = App;
 
   // Define actions
 
-  flax.action.define(App.prototype, 'bump', function() {
+  megalith.action.define(App.prototype, 'bump', function() {
     return Object.assign({}, this.state, {
       version: this.version + 1,
     });
@@ -30,7 +30,7 @@ test('es5', t => {
     });
   };
 
-  flax.action.define(App.prototype, 'addMessage');
+  megalith.action.define(App.prototype, 'addMessage');
 
   var app = new App();
 
