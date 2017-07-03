@@ -1,4 +1,5 @@
 import { $state, $name, $parent, $children } from './symbols';
+import isBasic from './isBasic';
 import Store from './Store';
 
 /**
@@ -42,9 +43,7 @@ function defineStateProperty(target, key, value) {
 
 export default function defineStateProperties(target, state) {
   // Arrays, strings, numbers... should all be saved as-is
-  const isBasic = (typeof state !== 'object' || Array.isArray(state));
-
-  if (isBasic) {
+  if (isBasic(state)) {
     target[$state] = state;
     return;
   }

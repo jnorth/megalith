@@ -1,5 +1,6 @@
 import { $state, $name, $parent, $children, $events, $reducers } from './symbols';
 import defineStateProperties from './defineStateProperties';
+import isBasic from './isBasic';
 import events from './events';
 
 /**
@@ -61,7 +62,7 @@ export default class Store {
   }
 
   /**
-   * Set the intial state of the store. Can only be called once, to instantiate
+   * Set the initial state of the store. Can only be called once, to instantiate
    * the store.
    *
    * @param {object} state
@@ -83,9 +84,8 @@ export default class Store {
    */
   serialize() {
     const state = this[$state];
-    const isBasic = (typeof state !== 'object' || Array.isArray(state));
 
-    if (isBasic) {
+    if (isBasic(state)) {
       return state;
     }
 

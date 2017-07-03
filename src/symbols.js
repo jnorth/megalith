@@ -1,12 +1,13 @@
 function createSymbol(name) {
+  const key = `_megalith${name}`;
   return (typeof Symbol === 'function')
-    ? Symbol.for(name)
-    : `_${name}`;
+    ? Symbol.for(key)
+    : key;
 }
 
-export const $state = createSymbol('megalithState');
-export const $name = createSymbol('megalithName');
-export const $parent = createSymbol('megalithParent');
-export const $children = createSymbol('megalithChildren');
-export const $events = createSymbol('megalithEvents');
-export const $reducers = createSymbol('megalithReducers');
+export const $state = createSymbol('State');
+export const $name = createSymbol('Name');
+export const $parent = createSymbol('Parent');
+export const $children = createSymbol('Children');
+export const $events = createSymbol('Events');
+export const $reducers = createSymbol('Reducers');
