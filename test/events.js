@@ -44,23 +44,12 @@ class App extends Store {
 
 test('init event', t => {
   const app = new App();
-  t.plan(6);
+  t.plan(3);
 
-  function handler(event) {
+  app.events.all(event => {
     t.is(event.store, app);
     t.is(event.action.type, '@init');
     t.is(event.action.payload.length, 0);
-  }
-
-  app.subscribe(event => handler(event));
-
-  app.subscribe.on({
-    init: true,
-    handler,
-  });
-
-  app.subscribe.on({
-    handler,
   });
 });
 
@@ -68,11 +57,12 @@ test('action triggers event', t => {
   const app = new App();
   t.plan(3);
 
-  app.subscribe(event => {
-    if (event.action.type === '@init') return;
-    t.is(event.action.type, 'bumpVersion');
-    t.is(event.action.payload.length, 0);
-    t.is(app.state.version, 2);
+  app.events.on({
+    handler: event => {
+      t.is(event.action.type, 'bumpVersion');
+      t.is(event.action.payload.length, 0);
+      t.is(app.state.version, 2);
+    }
   });
 
   app.bumpVersion();
@@ -81,19 +71,21 @@ test('action triggers event', t => {
 test('action triggers child event', t => {
   const app = new App();
 
-  app.subscribe(event => {
-    if (event.action.type === '@init') return;
-    if (event.action.type === 'bumpVersion') return;
-    t.is(event.action.type, 'messages.add');
-    t.is(event.action.payload.length, 1);
-    t.is(event.action.payload[0], 'C');
+  app.events.on({
+    handler: event => {
+      if (event.action.type === 'bumpVersion') return;
+      t.is(event.action.type, 'messages.add');
+      t.is(event.action.payload.length, 1);
+      t.is(event.action.payload[0], 'C');
+    }
   });
 
-  app.messages.subscribe(event => {
-    if (event.action.type === '@init') return;
-    t.is(event.action.type, 'add');
-    t.is(event.action.payload.length, 1);
-    t.is(event.action.payload[0], 'C');
+  app.messages.events.on({
+    handler: event => {
+      t.is(event.action.type, 'add');
+      t.is(event.action.payload.length, 1);
+      t.is(event.action.payload[0], 'C');
+    }
   });
 
   app.messages.add('C');
@@ -101,22 +93,17 @@ test('action triggers child event', t => {
 
   const app2 = new App();
 
-  app2.subscribe(event => {
-    if (event.action.type === '@init') return;
-    t.is(event.action.type, 'messages.a.increment');
-    t.is(event.action.payload.length, 0);
+  app2.events.on({
+    handler: event => {
+      t.is(event.action.type, 'messages.a.increment');
+      t.is(event.action.payload.length, 0);
+    }
   });
 
   app2.messages.a.increment();
 });
 
-test('subscribe service cache', t => {
-  const app = new App();
-
-  t.is(app.subscribe, app.subscribe);
-});
-
-test('subscribe service clobber', t => {
+test('events service clobber', t => {
   class A extends Store {
     @action a() { return {}; }
   }
@@ -128,13 +115,14 @@ test('subscribe service clobber', t => {
   const a = new A();
   const b = new B();
 
-  t.not(a.subscribe, b.subscribe);
+  t.plan(3);
+  t.not(a.events, b.events);
 
-  a.subscribe.on({
+  a.events.on({
     handler: event => t.is(event.action.type, 'a'),
   });
 
-  b.subscribe.on({
+  b.events.on({
     handler: event => t.is(event.action.type, 'b'),
   });
 
@@ -142,7 +130,7 @@ test('subscribe service clobber', t => {
   b.b();
 });
 
-test('subscribe on', t => {
+test('events on', t => {
   class A extends Store {
     @action a() { return {}; }
     @action b() { return {}; }
@@ -152,21 +140,21 @@ test('subscribe on', t => {
   t.plan(6);
   const app = new A();
 
-  app.subscribe.on({
+  app.events.on({
     handler: event => t.not(['a', 'b', 'c'].indexOf(event.action.type), -1),
   });
 
-  app.subscribe.on({
+  app.events.on({
     type: 'a',
     handler: event => t.is(event.action.type, 'a'),
   });
 
-  app.subscribe.on({
+  app.events.on({
     type: 'b',
     handler: event => t.is(event.action.type, 'b'),
   });
 
-  app.subscribe.on({
+  app.events.on({
     type: 'c',
     handler: event => t.is(event.action.type, 'c'),
   });
@@ -176,56 +164,56 @@ test('subscribe on', t => {
   app.c();
 });
 
-test('subscribe off', t => {
+test('events off', t => {
   const app = new App();
   t.plan(1);
 
   const handler = event => t.is(event.action.type, 'bumpVersion');
-  app.subscribe.on(handler);
+  app.events.on({ handler });
 
   app.bumpVersion();
-  app.subscribe.off(handler);
+  app.events.off({ handler });
   app.bumpVersion();
 });
 
-test('subscribe off ref', t => {
+test('events off ref', t => {
   const app = new App();
   t.plan(2);
 
   const handler = event => t.is(event.action.type, 'bumpVersion');
-  const ref = app.subscribe.on(handler);
+  const ref = app.events.on({ handler });
   t.is(ref.handler, handler);
 
   app.bumpVersion();
-  app.subscribe.off(ref);
+  app.events.off(ref);
   app.bumpVersion();
 });
 
-test('subscribe off tag', t => {
+test('events off tag', t => {
   const app = new App();
   t.plan(2);
 
   const handler = event => t.is(event.action.type, 'bumpVersion');
-  app.subscribe.on({ tag: 'aaa', handler });
+  app.events.on({ tag: 'aaa', handler });
 
   app.bumpVersion();
-  app.subscribe.off({ tag: 'bbb' });
+  app.events.off({ tag: 'bbb' });
   app.bumpVersion();
-  app.subscribe.off({ tag: 'aaa' });
+  app.events.off({ tag: 'aaa' });
   app.bumpVersion();
 });
 
-test('subscribe context', t => {
+test('events context', t => {
   const app = new App();
 
-  app.subscribe.on({
+  app.events.on({
     context: 123,
     handler: event => t.is(event.context, 123),
   });
 
   const ref = { a: 'a' };
 
-  app.subscribe.on({
+  app.events.on({
     context: ref,
     handler: event => t.is(event.context, ref),
   });
@@ -233,11 +221,11 @@ test('subscribe context', t => {
   app.bumpVersion();
 });
 
-test('subscribe before and after', t => {
+test('events before and after', t => {
   const app = new App();
   t.plan(2);
 
-  app.subscribe.on({
+  app.events.on({
     type: 'bumpVersion',
     before: true,
     after: true,
@@ -251,34 +239,48 @@ test('subscribe before and after', t => {
   app.bumpVersion();
 });
 
-test('subscribe bubble', t => {
+test('events bubble', t => {
   const app = new App();
   t.plan(3);
 
-  app.subscribe.on({
+  app.events.on({
     bubble: true,
     handler: event => t.is(event.action.type, 'messages.a.increment'),
   });
 
-  app.messages.subscribe.on({
+  app.messages.events.on({
     bubble: true,
     handler: event => t.is(event.action.type, 'a.increment'),
   });
 
-  app.messages.a.subscribe.on({
+  app.messages.a.events.on({
     bubble: true,
     handler: event => t.is(event.action.type, 'increment'),
   });
 
-  app.subscribe.on({
+  app.events.on({
     bubble: false,
     handler: event => t.is(event.action.type, 'XYZ'),
   });
 
-  app.messages.subscribe.on({
+  app.messages.events.on({
     bubble: false,
     handler: event => t.is(event.action.type, 'XYZ'),
   });
 
   app.messages.a.increment();
+});
+
+test('events off length', t => {
+  const app = new App();
+
+  app.events.on({ tag: 'a', handler: event => {}});
+  app.events.on({ tag: 'b', handler: event => {}});
+  app.events.on({ tag: 'b', handler: event => {}});
+  app.events.on({ tag: 'c', handler: event => {}});
+
+  t.is(app.events.off({ tag: 'a' }), 1);
+  t.is(app.events.off({ tag: 'x' }), 0);
+  t.is(app.events.off({ tag: 'b' }), 2);
+  t.is(app.events.off({ tag: 'c' }), 1);
 });

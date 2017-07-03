@@ -8,5 +8,5 @@ export const $state = createSymbol('megalithState');
 export const $name = createSymbol('megalithName');
 export const $parent = createSymbol('megalithParent');
 export const $children = createSymbol('megalithChildren');
-export const $subscribers = createSymbol('megalithSubscribers');
+export const $events = createSymbol('megalithEvents');
 export const $reducers = createSymbol('megalithReducers');

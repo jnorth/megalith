@@ -1,13 +1,6 @@
-import { $state, $name, $parent, $children, $subscribers, $reducers } from './symbols';
+import { $state, $name, $parent, $children, $events, $reducers } from './symbols';
 import defineStateProperties from './defineStateProperties';
-import subscription from './subscription';
-
-/**
- * Callback for store change events.
- *
- * @callback subscriptionCallback
- * @param {object} event
- */
+import events from './events';
 
 /**
  * The base store class.
@@ -46,11 +39,16 @@ export default class Store {
       value: {},
     });
 
-    // Instance subscribers. Each store object holds its own list of action
-    // event callbacks.
-    Object.defineProperty(this, $subscribers, {
+    // Instance event subscribers. Each store object holds its own list of
+    // action event callbacks.
+    Object.defineProperty(this, $events, {
       writable: true,
       value: [],
+    });
+
+    // Expose events service
+    Object.defineProperty(this, 'events', {
+      value: events.createService(this),
     });
   }
 
@@ -103,27 +101,7 @@ export default class Store {
   }
 
   /**
-   * Subscribe to state changes.
-   *
-   * @param {subscriptionCallback} callback
-   *        The callback that will be called when the state changes.
-   *
-   * @return {subscriptionService}
-   */
-  get subscribe() {
-    // On first access, create a new subscription service
-    const service = subscription.createService(this);
-
-    // Cache the service for repeat accesses
-    Object.defineProperty(this, 'subscribe', {
-      value: service,
-    });
-
-    return service;
-  }
-
-  /**
-   * Dispatch an event.
+   * Dispatch an action.
    *
    * This is handled automatically when calling action methods, but you can use
    * this to replay saved actions or trigger synthetic actions.
@@ -132,7 +110,7 @@ export default class Store {
     const dotIndex = action.type.indexOf('.');
     const isChild = dotIndex !== -1;
 
-    this.subscribe.trigger(action, { isChild, before: true });
+    this.events.trigger(action, { isChild, before: true });
 
     // Forward actions to child stores
     if (isChild) {
@@ -152,7 +130,7 @@ export default class Store {
       this[$state] = reducer.apply(this, action.payload);
     }
 
-    this.subscribe.trigger(action, { isChild, after: true });
+    this.events.trigger(action, { isChild, after: true });
 
     return this[$state];
   }
