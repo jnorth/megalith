@@ -1,6 +1,7 @@
-import { $state, $name, $parent, $children } from './symbols';
-import isBasic from './isBasic';
 import Store from './Store';
+import isBasic from './isBasic';
+import defineProperty from './defineProperty';
+import { $state, $name, $parent, $children } from './symbols';
 
 /**
  * Add a state property to a Store object.
@@ -24,7 +25,7 @@ function defineStateProperty(target, key, value) {
     value[$parent] = target;
     value[$name] = key;
 
-    Object.defineProperty(target, key, {
+    defineProperty(target, key, {
       enumerable: true,
       get() { return target[$children][key]; },
     });
@@ -34,7 +35,7 @@ function defineStateProperty(target, key, value) {
   else {
     target[$state][key] = value;
 
-    Object.defineProperty(target, key, {
+    defineProperty(target, key, {
       enumerable: true,
       get() { return this[$state][key]; },
     });

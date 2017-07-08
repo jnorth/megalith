@@ -1,3 +1,4 @@
+import defineProperty from './defineProperty';
 import { $name, $parent, $reducers } from './symbols';
 
 /**
@@ -47,7 +48,7 @@ function findRoot(store) {
 function action(target, key, descriptor) {
   // Save current implementation as the reducer function
   target[$reducers] = target[$reducers] || {};
-  Object.defineProperty(target[$reducers], key, descriptor);
+  defineProperty(target[$reducers], key, descriptor);
 
   // Write new implementation as the action creator function
   descriptor.value = function(...payload) {
@@ -82,7 +83,7 @@ action.define = function define(target, key, fn=null) {
 
   // Save the action method, and re-write it to be an action creator
   const descriptor = action(target, key, { value: fn });
-  Object.defineProperty(target, key, descriptor);
+  defineProperty(target, key, descriptor);
 };
 
 export default action;

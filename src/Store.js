@@ -1,6 +1,7 @@
-import { $state, $name, $parent, $children, $events, $reducers } from './symbols';
-import defineStateProperties from './defineStateProperties';
 import events from './events';
+import defineProperty from './defineProperty';
+import defineStateProperties from './defineStateProperties';
+import { $state, $name, $parent, $children, $events, $reducers } from './symbols';
 
 /**
  * The base store class.
@@ -15,39 +16,39 @@ export default class Store {
     // Instance state. Holds all properties that should be tracked by the Store
     // object. This allows other properties to be added to a Store object
     // without affecting serialization.
-    Object.defineProperty(this, $state, {
+    defineProperty(this, $state, {
       value: undefined,
       writable: true,
     });
 
     // Instance action path name. For child stores, this is set to the name it
     // is referenced as in the parent. Used to create action names.
-    Object.defineProperty(this, $name, {
+    defineProperty(this, $name, {
       value: undefined,
       writable: true,
     });
 
     // Parent store. For child stores, this is set to the parent store. Used to
     // find the root store object, which is where we want to dispatch actions.
-    Object.defineProperty(this, $parent, {
+    defineProperty(this, $parent, {
       value: undefined,
       writable: true,
     });
 
     // Children stores. Holds all children stores, allowing easy serialization.
-    Object.defineProperty(this, $children, {
+    defineProperty(this, $children, {
       value: {},
     });
 
     // Instance event subscribers. Each store object holds its own list of
     // action event callbacks.
-    Object.defineProperty(this, $events, {
+    defineProperty(this, $events, {
       writable: true,
       value: [],
     });
 
     // Expose events service
-    Object.defineProperty(this, 'events', {
+    defineProperty(this, 'events', {
       value: events.createService(this),
     });
   }
@@ -68,7 +69,7 @@ export default class Store {
    */
   set initialState(state) {
     // Override setter
-    Object.defineProperty(this, 'initialState', {
+    defineProperty(this, 'initialState', {
       set() {
         throw new Error(`Cannot re-initialize state on store '${this.constructor.name}'.`);
       },
