@@ -38,17 +38,14 @@ test('es5', t => {
   t.deepEqual(app.state.messages, ['a', 'b']);
   t.is(app.version, 1);
   t.deepEqual(app.messages, ['a', 'b']);
-  t.deepEqual(app.state, app.serialize());
 
   app.bump();
   t.is(app.state.version, 2);
   t.is(app.version, 2);
-  t.is(app.serialize().version, 2);
 
   app.addMessage('c');
   t.is(app.state.version, 2);
   t.is(app.version, 2);
   t.deepEqual(app.state.messages, ['a', 'b', 'c']);
   t.deepEqual(app.messages, ['a', 'b', 'c']);
-  t.deepEqual(app.serialize().messages, ['a', 'b', 'c']);
 });

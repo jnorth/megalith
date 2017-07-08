@@ -1,6 +1,5 @@
 import { $state, $name, $parent, $children, $events, $reducers } from './symbols';
 import defineStateProperties from './defineStateProperties';
-import isBasic from './isBasic';
 import events from './events';
 
 /**
@@ -55,7 +54,7 @@ export default class Store {
 
   /**
    * Get the store's state. Does not include the state of child stores—instead
-   * access the children directly, or use `serialize`.
+   * access the children directly, or use `snapshot.create`.
    */
   get state() {
     return this[$state];
@@ -77,27 +76,6 @@ export default class Store {
 
     // Initialize properties
     defineStateProperties(this, state);
-  }
-
-  /**
-   * Get the store's complete state tree.
-   */
-  serialize() {
-    const state = this[$state];
-
-    if (isBasic(state)) {
-      return state;
-    }
-
-    const children = Object.keys(this[$children]).reduce((combined, child) => {
-      combined[child] = this[$children][child].serialize();
-      return combined;
-    }, {});
-
-    return {
-      ...state,
-      ...children,
-    };
   }
 
   /**

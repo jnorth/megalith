@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Store, child } from '..';
+import { Store, child, snapshot } from '..';
 
 class Messages extends Store {
   initialState = {
@@ -23,9 +23,9 @@ test('store instance', t => {
   t.is(app.messages.state.all[1], 'B');
 });
 
-test('serialize before accessing child', t => {
+test('snapshot before accessing child', t => {
   const app = new App();
-  const state = app.serialize();
+  const state = snapshot.create(app);
 
   t.is(state.version, 1);
   t.is(state.messages.all.length, 3);

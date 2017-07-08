@@ -11,3 +11,5 @@ export const $parent = createSymbol('Parent');
 export const $children = createSymbol('Children');
 export const $events = createSymbol('Events');
 export const $reducers = createSymbol('Reducers');
+export const $serializer = createSymbol('Serializer');
+export const $deserializer = createSymbol('Deserializer');
