@@ -1,13 +1,67 @@
 {
-  "name": "flax",
-  "version": "0.0.1",
+  "name": "megalith",
+  "version": "0.9.0",
   "author": "Joseph North <north@sublink.ca>",
-  "description": "A classical flux.",
+  "description": "The small and straightforward JavaScript state container.",
   "keywords": [
     "react",
-    "flux"
+    "flux",
+    "redux",
+    "mobx",
+    "state container",
+    "state management"
   ],
   "license": "MIT",
-  "repository": "jnorth/flax",
-  "main": "index"
+  "repository": "jnorth/megalith",
+  "browser": "dist/megalith.js",
+  "main": "dist/megalith.common.js",
+  "module": "dist/megalith.esm.js",
+  "jsnext:main": "dist/megalith.esm.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepublish": "npm run build",
+    "prebuild": "rimraf dist",
+    "build": "node build/rollup.js",
+    "pretest": "npm run build",
+    "test": "ava"
+  },
+  "devDependencies": {
+    "ava": "^0.18.2",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-preset-env": "^1.2.1",
+    "babel-preset-stage-1": "^6.22.0",
+    "rimraf": "^2.6.1",
+    "rollup": "^0.41.5",
+    "rollup-plugin-babel": "^2.7.1",
+    "uglify-js": "^2.8.22"
+  },
+  "babel": {
+    "presets": [
+      [
+        "env",
+        {
+          "modules": false
+        }
+      ],
+      "stage-1"
+    ],
+    "plugins": [
+      "transform-decorators-legacy"
+    ]
+  },
+  "ava": {
+    "require": "babel-register",
+    "babel": {
+      "presets": [
+        "env",
+        "stage-1"
+      ],
+      "plugins": [
+        "transform-decorators-legacy"
+      ]
+    }
+  }
 }
