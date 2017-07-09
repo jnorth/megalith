@@ -1,11 +1,15 @@
 {
   "name": "megalith",
-  "version": "0.0.1",
+  "version": "0.9.0",
   "author": "Joseph North <north@sublink.ca>",
-  "description": "A classical flux.",
+  "description": "The small and straightforward JavaScript state container.",
   "keywords": [
     "react",
-    "flux"
+    "flux",
+    "redux",
+    "mobx",
+    "state container",
+    "state management"
   ],
   "license": "MIT",
   "repository": "jnorth/megalith",
@@ -17,6 +21,7 @@
     "dist"
   ],
   "scripts": {
+    "prepublish": "npm run build",
     "prebuild": "rimraf dist",
     "build": "node build/rollup.js",
     "pretest": "npm run build",
