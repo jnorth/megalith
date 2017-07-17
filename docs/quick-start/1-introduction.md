@@ -11,7 +11,7 @@ Install Megalith through [npm](https://www.npmjs.com/package/megalith) or a
 
 ES6 module:
 
-`import megalith from 'megalith';`
+`import * as megalith from 'megalith';`
 
 CommonJS:
 

@@ -1,9 +1,3 @@
-import Store from './Store';
-import action from './action';
-import snapshot from './snapshot';
-
-export default {
-  Store,
-  action,
-  snapshot,
-};
+export { default as Store } from './Store';
+export { default as action } from './action';
+export { default as snapshot } from './snapshot';

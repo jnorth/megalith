@@ -1,5 +1,5 @@
 import test from 'ava';
-import megalith from '..';
+import * as megalith from '..';
 
 class App extends megalith.Store {
   initialState = {
